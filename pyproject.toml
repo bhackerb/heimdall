@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "heimdall-agent"
+version = "0.1.0"
+description = "Lightweight security & update agent — watches over your machines, reports to Mithrandir"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "pyyaml>=6.0",
+    "requests>=2.28",
+]
+
+[project.scripts]
+heimdall = "heimdall.cli:main"
