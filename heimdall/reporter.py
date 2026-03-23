@@ -24,10 +24,12 @@ def _build_report(
     security: SecurityReport | None = None,
 ) -> dict[str, Any]:
     """Build a structured report payload."""
+    now = datetime.now(timezone.utc).isoformat()
     report: dict[str, Any] = {
         "hostname": config.hostname,
         "role": config.role,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now,
+        "scannedAt": now,
         "agent": "heimdall",
         "version": "0.1.0",
     }
@@ -157,6 +159,7 @@ def report_to_engram(
             headers={
                 "Authorization": f"Bearer {config.mithrandir.engram_secret}",
                 "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
             },
             timeout=30,
         )
