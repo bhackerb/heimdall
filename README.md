@@ -5,7 +5,7 @@ Lightweight security and update agent for Linux machines. Scans for pending upda
 ## Quick Install
 
 ```bash
-pip install git+https://github.com/bhackerb/beorn.git
+pip install git+https://github.com/bhackerb/heimdall.git
 beorn init
 beorn scan
 ```
@@ -13,7 +13,19 @@ beorn scan
 Or one-line:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/bhackerb/beorn/main/scripts/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/bhackerb/heimdall/main/scripts/install.sh | bash
+```
+
+## Upgrading from Heimdall
+
+If you are already running the legacy Heimdall agent, you can upgrade to Beorn using the automated migration script. This will migrate your configuration, identity, and systemd services.
+
+```bash
+git clone https://github.com/bhackerb/heimdall.git beorn_temp && \
+cd beorn_temp && \
+chmod +x scripts/migrate.sh && \
+./scripts/migrate.sh && \
+cd .. && rm -rf beorn_temp
 ```
 
 ## Configuration
