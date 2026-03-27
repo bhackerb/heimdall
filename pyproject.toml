@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "heimdall-agent"
+name = "beorn-agent"
 version = "0.1.0"
 description = "Lightweight security & update agent — watches over your machines, reports to Mithrandir"
 requires-python = ">=3.10"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-heimdall = "heimdall.cli:main"
+beorn = "beorn.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["heimdall"]
+packages = ["beorn"]
