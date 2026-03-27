@@ -1,0 +1,38 @@
+# Heimdall Configuration
+# Copy to ~/.config/heimdall/config.yaml
+
+# This machine's identity
+hostname: "laptop"          # Friendly name for this machine
+role: "workstation"         # workstation, server, nas
+
+# Mithrandir connection (for reporting)
+mithrandir:
+  url: "https://gwaihir.bhackerb.com"  # or http://localhost:47380
+  api_key: ""               # Bearer token for auth
+  engram_url: "https://engram.bhackerb.com/mcp"  # For direct memory logging
+  engram_secret: ""
+
+# Scan schedule (when running as daemon)
+schedule:
+  update_scan_hours: 6      # Scan for updates every N hours
+  security_scan_hours: 12   # Security audit every N hours
+  report_hours: 24          # Full report to Mithrandir every N hours
+
+# Update policy
+policy:
+  auto_security: true       # Auto-apply security updates
+  hold_packages:            # Never auto-update these
+    - "nvidia-*"
+    - "linux-image-*"
+    - "postgresql-*"
+    - "docker-ce"
+  maintenance_hour: 3       # Apply updates at 3 AM (local time)
+
+# Security settings
+security:
+  check_ufw: true
+  check_fail2ban: true
+  check_ssh_config: true
+  check_open_ports: true
+  check_listening_services: true
+  alert_on_new_port: true
