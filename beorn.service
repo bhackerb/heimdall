@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=%i
-ExecStart=/usr/local/bin/beorn daemon
+ExecStart=/home/%i/.local/bin/beorn daemon
 Restart=on-failure
 RestartSec=60
 Environment=HEIMDALL_API_KEY=
