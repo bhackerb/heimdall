@@ -170,6 +170,26 @@ def report_to_engram(
         return False, f"Failed to reach Engram: {e}"
 
 
+def poll_command(config: BeornConfig) -> dict | None:
+    """Poll Mithrandir for a pending command. Returns command dict or None."""
+    if not config.mithrandir.api_key or not config.mithrandir.url:
+        return None
+
+    url = f"{config.mithrandir.url.rstrip('/')}/api/heimdall/command/{config.hostname}"
+    try:
+        resp = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {config.mithrandir.api_key}"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data.get("command")  # None if no pending command
+        return None
+    except requests.RequestException:
+        return None
+
+
 def save_local_report(
     config: BeornConfig,
     scan: ScanResult | None = None,

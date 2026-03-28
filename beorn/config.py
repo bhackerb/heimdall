@@ -129,3 +129,15 @@ def ensure_dirs() -> None:
     """Create config and state directories if they don't exist."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     STATE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def update_config_policy(auto_security: bool, path: Path | None = None) -> None:
+    """Persist a policy change to the config file on disk."""
+    path = path or CONFIG_PATH
+    with open(path) as f:
+        raw: dict[str, Any] = yaml.safe_load(f) or {}
+    if "policy" not in raw:
+        raw["policy"] = {}
+    raw["policy"]["auto_security"] = auto_security
+    with open(path, "w") as f:
+        yaml.dump(raw, f, default_flow_style=False, sort_keys=False)

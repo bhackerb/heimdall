@@ -145,20 +145,79 @@ def cmd_report(args: argparse.Namespace, config: BeornConfig) -> int:
     return 0
 
 
+def _execute_command(cmd: dict, config: BeornConfig) -> None:
+    """Execute a command received from Mithrandir."""
+    from beorn.scanner import full_scan
+    from beorn.security import full_security_scan
+    from beorn.policy import get_auto_applicable, classify_scan
+    from beorn.updater import apply_updates
+    from beorn.reporter import send_report
+    from beorn.config import update_config_policy
+
+    command = cmd.get("command", "")
+    print(f"[{_ts()}] Command received: {command}")
+
+    if command == "scan":
+        scan_result = full_scan()
+        sec_result = full_security_scan(config)
+        print(f"[{_ts()}] Scan complete — {scan_result.summary()}, {sec_result.summary()}")
+        messages = send_report(config, scan_result, sec_result)
+        for msg in messages:
+            print(f"[{_ts()}]   {msg}")
+
+    elif command == "apply-security":
+        scan_result = full_scan()
+        classified = classify_scan(scan_result, config)
+        applicable = classified["auto_apply"]
+        if applicable:
+            print(f"[{_ts()}] Applying {len(applicable)} security updates...")
+            result = apply_updates(applicable, config)
+            print(f"[{_ts()}] Apply result: {result.summary()}")
+            sec_result = full_security_scan(config)
+            send_report(config, full_scan(), sec_result)
+        else:
+            print(f"[{_ts()}] No applicable security updates.")
+
+    elif command == "enable-auto-security":
+        update_config_policy(auto_security=True)
+        config.policy.auto_security = True
+        print(f"[{_ts()}] Mode set to Protective (auto_security=True)")
+
+    elif command == "disable-auto-security":
+        update_config_policy(auto_security=False)
+        config.policy.auto_security = False
+        print(f"[{_ts()}] Mode set to Audit (auto_security=False)")
+
+    elif command == "hold":
+        pkg = cmd.get("args", "")
+        if pkg and pkg not in config.policy.hold_packages:
+            config.policy.hold_packages.append(pkg)
+            print(f"[{_ts()}] Held package: {pkg}")
+
+    elif command == "unhold":
+        pkg = cmd.get("args", "")
+        if pkg in config.policy.hold_packages:
+            config.policy.hold_packages.remove(pkg)
+            print(f"[{_ts()}] Unheld package: {pkg}")
+
+    else:
+        print(f"[{_ts()}] Unknown command: {command}")
+
+
 def cmd_daemon(args: argparse.Namespace, config: BeornConfig) -> int:
     """Run as background daemon — scan on schedule, auto-apply security."""
     from beorn.scanner import full_scan
     from beorn.security import full_security_scan
     from beorn.policy import get_auto_applicable, should_auto_apply_now
     from beorn.updater import apply_updates
-    from beorn.reporter import send_report
+    from beorn.reporter import send_report, poll_command
     from beorn.engine import Carrock
 
     print(f"Beorn daemon starting — {config.hostname} ({config.role})")
     print(f"  Update scan every {config.schedule.update_scan_hours}h")
     print(f"  Security scan every {config.schedule.security_scan_hours}h")
     print(f"  Report every {config.schedule.report_hours}h")
-    print(f"  Pulse check every 5m")
+    print(f"  Command poll every 5m")
     print(f"  Maintenance window: {config.policy.maintenance_hour}:00")
     print()
 
@@ -177,13 +236,19 @@ def cmd_daemon(args: argparse.Namespace, config: BeornConfig) -> int:
             scan_result = None
             sec_result = None
 
+            # Command poll — check for instructions from Mithrandir
+            cmd = poll_command(config)
+            if cmd:
+                try:
+                    _execute_command(cmd, config)
+                except Exception as e:
+                    print(f"[{_ts()}] Command execution failed: {e}")
+
             # Pulse Check (The Hive)
-            print(f"[{_ts()}] Heartbeat Pulse...")
             pulse_results = carrock.run_pulse()
             for name, res in pulse_results.items():
                 if res.data.get("changes"):
                     print(f"[{_ts()}]   ALERT [{name.upper()}]: {res.summary}")
-                    # In the future, this would trigger an immediate high-priority report
 
             # Update scan
             if now - last_update_scan >= update_interval:
@@ -196,9 +261,7 @@ def cmd_daemon(args: argparse.Namespace, config: BeornConfig) -> int:
                 if should_auto_apply_now(config):
                     applicable = get_auto_applicable(scan_result, config)
                     if applicable:
-                        print(
-                            f"[{_ts()}] Auto-applying {len(applicable)} security updates..."
-                        )
+                        print(f"[{_ts()}] Auto-applying {len(applicable)} security updates...")
                         result = apply_updates(applicable, config)
                         print(f"[{_ts()}] Apply result: {result.summary()}")
 
